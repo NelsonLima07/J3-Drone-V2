@@ -16,8 +16,14 @@ add_library(usr STATIC
     sensors/imuc42688.c
     serial/ibus.c
     serial/radio_comandos.c
+    serial/gps_nmea.c
     system/estados.c
     system/calibracao.c
+    navigation/home_ponto.c
+    navigation/nav_posicao.c
+    navigation/nav_controle.c
+    sensors/lis3mdl.c
+    sensors/bmp280.c
     esc/dshot.c
 )
 

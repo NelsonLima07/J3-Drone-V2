@@ -66,12 +66,15 @@ void estados_inicializa(estados_t *es, const config_estados_t *cfg);
  * @param  canais               canais do iBus (IBUS_NUM_CANAIS) ou NULL
  * @param  tem_sinal            1 quando ha quadro iBus recente
  * @param  calibracao_concluida 1 quando a coleta de calibracao terminou
+ * @param  armar_permitido      1 libera o armar (gate de GPS/modo);
+ *                              com 0 o gesto e cancelado
  * @param  agora_ms             tempo atual (ms)
  * @return novo modo.
  */
 estado_modo_t estados_atualiza(estados_t *es, const config_estados_t *cfg,
                                const uint16_t *canais, uint8_t tem_sinal,
-                               uint8_t calibracao_concluida, uint32_t agora_ms);
+                               uint8_t calibracao_concluida,
+                               uint8_t armar_permitido, uint32_t agora_ms);
 
 /**
  * @brief  1 quando o controle esta habilitado (modo VOO).

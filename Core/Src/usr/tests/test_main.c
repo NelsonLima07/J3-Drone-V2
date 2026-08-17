@@ -17,6 +17,13 @@ int testes_calibracao(void);
 int testes_dshot(void);
 int testes_estimador(void);
 int testes_radio(void);
+int testes_gps_nmea(void);
+int testes_home_ponto(void);
+int testes_nav_posicao(void);
+int testes_nav_controle(void);
+int testes_lis3mdl(void);
+int testes_bmp280(void);
+int testes_estimador_mag(void);
 
 int main(void)
 {
@@ -48,6 +55,27 @@ int main(void)
 
   printf("\n=== Testes do radio (canais -> setpoint) ===\n");
   falhas += testes_radio();
+
+  printf("\n=== Testes do parser NMEA (GPS BN-220) ===\n");
+  falhas += testes_gps_nmea();
+
+  printf("\n=== Testes do home point ===\n");
+  falhas += testes_home_ponto();
+
+  printf("\n=== Testes da geometria de navegacao ===\n");
+  falhas += testes_nav_posicao();
+
+  printf("\n=== Testes do controlador de navegacao ===\n");
+  falhas += testes_nav_controle();
+
+  printf("\n=== Testes do magnetometro LIS3MDL ===\n");
+  falhas += testes_lis3mdl();
+
+  printf("\n=== Testes do barometro BMP280 ===\n");
+  falhas += testes_bmp280();
+
+  printf("\n=== Testes do estimador com magnetometro ===\n");
+  falhas += testes_estimador_mag();
 
   printf("\n=== Resumo ===\n");
   if (falhas == 0)

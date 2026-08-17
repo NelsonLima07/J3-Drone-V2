@@ -55,6 +55,12 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Core/Src/usr/serial/ibus_uart_hal.c
     # Saida DShot600 para os 4 ESCs (TIM1 + GPDMA1 CH3..CH6)
     Core/Src/usr/esc/dshot_timer_hal.c
+    # Recepcao GPS BN-220 na USART3 (DMA circular GPDMA1 CH7)
+    Core/Src/usr/sensors/gps_uart_hal.c
+    # Transporte I2C2 (polling) para LIS3MDL e BMP280
+    Core/Src/usr/sensors/i2c2_hal.c
+    # LED dedicado de status do GPS (PB2)
+    Core/Src/usr/system/gps_led.c
     # Supervisor do sistema de controle de voo (usa main.h e HAL_GetTick)
     Core/Src/usr/main_j3dronev2.c
 )

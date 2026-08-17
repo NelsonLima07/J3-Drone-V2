@@ -45,7 +45,8 @@ void estados_inicializa(estados_t *es, const config_estados_t *cfg)
 
 estado_modo_t estados_atualiza(estados_t *es, const config_estados_t *cfg,
                                const uint16_t *canais, uint8_t tem_sinal,
-                               uint8_t calibracao_concluida, uint32_t agora_ms)
+                               uint8_t calibracao_concluida,
+                               uint8_t armar_permitido, uint32_t agora_ms)
 {
   uint8_t cal_acionado;
 
@@ -113,10 +114,17 @@ estado_modo_t estados_atualiza(estados_t *es, const config_estados_t *cfg,
     return es->modo;
   }
 
-  /* Gesto de armar/desarmar (throttle no minimo + yaw extremo). */
+  /* Gesto de armar/desarmar (throttle no minimo + yaw extremo).
+   * O gate de armar (GPS/modo) entra via armar_permitido: com 0 o
+   * gesto em curso e cancelado (exige gesto novo quando liberar). */
   if (es->modo == ESTADO_ESPERA)
   {
-    if (canais[cfg->throttle_idx] <= cfg->throttle_min &&
+    if (!armar_permitido)
+    {
+      es->gesto_hold = 0;
+    }
+    if (armar_permitido &&
+        canais[cfg->throttle_idx] <= cfg->throttle_min &&
         canais[cfg->yaw_idx] >= cfg->yaw_esquerda)
     {
       if (!es->gesto_hold)

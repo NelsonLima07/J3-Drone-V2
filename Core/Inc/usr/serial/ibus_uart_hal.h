@@ -48,6 +48,18 @@ int ibus_uart_tem_sinal(uint32_t agora_ms);
  */
 uint32_t ibus_uart_ultimo_tick(void);
 
+/**
+ * @brief  Evento de RX do HAL (TC ou IDLE na USART2): valida o quadro,
+ *         publica o snapshot e rearma a DMA.
+ * @param  size quantidade de bytes recebidos no bloco.
+ */
+void ibus_uart_rx_event(uint16_t size);
+
+/**
+ * @brief  Erro de RX do HAL (overrun/noise/frame na USART2): rearma a DMA.
+ */
+void ibus_uart_erro(void);
+
 #ifdef __cplusplus
 }
 #endif

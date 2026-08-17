@@ -25,6 +25,8 @@ void estimador_config_padrao(config_estimador_t *cfg)
   cfg->ganho = 0.3f;
   cfg->g_min = 0.5f;
   cfg->g_max = 2.0f;
+  cfg->ganho_mag = 0.5f;
+  cfg->declinacao_rad = 0.0f;
 }
 
 void estimador_atitude_inicializa(estimador_atitude_t *est,
@@ -69,6 +71,58 @@ void estimador_atitude_atualiza(estimador_atitude_t *est,
   }
 
   /* q' = 0.5 * q (x) (0, w)  ->  q += q' * dt  ->  normaliza */
+  qd = quat_multiplica(est->q, omega);
+  qd.w *= 0.5f;
+  qd.x *= 0.5f;
+  qd.y *= 0.5f;
+  qd.z *= 0.5f;
+
+  q_novo.w = est->q.w + qd.w * dt;
+  q_novo.x = est->q.x + qd.x * dt;
+  q_novo.y = est->q.y + qd.y * dt;
+  q_novo.z = est->q.z + qd.z * dt;
+
+  est->q = quat_normaliza(q_novo);
+  est->contador++;
+}
+
+void estimador_atitude_atualiza_mag(estimador_atitude_t *est,
+                                    const float mag[3], float dt)
+{
+  vetor3_t m = {mag[0], mag[1], mag[2]};
+  vetor3_t m_mundo;      /* campo no frame do mundo (NED)          */
+  vetor3_t ref_mundo;    /* referencia no mundo apos declinacao    */
+  vetor3_t w;            /* campo predito no frame do corpo        */
+  vetor3_t erro;
+  quat_t q_conj = quat_conjuga(est->q);
+  quat_t omega = {0.0f, 0.0f, 0.0f, 0.0f};
+  quat_t qd;
+  quat_t q_novo;
+  float norma = vetor3_norma(m);
+  float horizontal;
+
+  if (norma < EPS_F)
+  {
+    return;
+  }
+  m.x /= norma;
+  m.y /= norma;
+  m.z /= norma;
+
+  /* Campo medido levado ao mundo -> referenciado por declinacao. */
+  m_mundo = quat_rotaciona_vetor(est->q, m);
+  horizontal = sqrtf(m_mundo.x * m_mundo.x + m_mundo.y * m_mundo.y);
+  ref_mundo.x = cosf(est->config.declinacao_rad) * horizontal;
+  ref_mundo.y = sinf(est->config.declinacao_rad) * horizontal;
+  ref_mundo.z = m_mundo.z;
+
+  /* Volta ao corpo e corrige o mesmo eixo que o erro aponta. */
+  w = quat_rotaciona_vetor(q_conj, ref_mundo);
+  erro = vetor3_produto_vetorial(m, w);
+  omega.x = est->config.ganho_mag * erro.x;
+  omega.y = est->config.ganho_mag * erro.y;
+  omega.z = est->config.ganho_mag * erro.z;
+
   qd = quat_multiplica(est->q, omega);
   qd.w *= 0.5f;
   qd.x *= 0.5f;

@@ -22,6 +22,9 @@
 #include "usart.h"
 #include "stm32h5xx_hal.h"
 
+#include "serial/ibus_uart_hal.h"
+#include "sensors/gps_uart_hal.h"
+
 /* Handles de DMA (GPDMA1) usados pelo SPI1 e pela USART2 */
 DMA_HandleTypeDef hdma_spi1_rx;
 DMA_HandleTypeDef hdma_spi1_tx;
@@ -214,4 +217,30 @@ void GPDMA1_Channel1_IRQHandler(void)
 void GPDMA1_Channel2_IRQHandler(void)
 {
   HAL_DMA_IRQHandler(&hdma_usart2_rx);
+}
+
+/* --- Overrides weak do HAL: despacho dos callbacks de RX ------------------- */
+
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
+{
+  if (huart->Instance == USART2)
+  {
+    ibus_uart_rx_event(size);
+  }
+  else if (huart->Instance == USART3)
+  {
+    gps_uart_rx_event(size);
+  }
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+{
+  if (huart->Instance == USART2)
+  {
+    ibus_uart_erro();
+  }
+  else if (huart->Instance == USART3)
+  {
+    gps_uart_erro();
+  }
 }

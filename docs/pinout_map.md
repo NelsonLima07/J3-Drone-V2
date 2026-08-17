@@ -42,10 +42,13 @@
 | Channel 4 | GPDMA1       | TIM1_CH2 (59) | mem→perif | DShot600 motor 2 (PA9)   |
 | Channel 5 | GPDMA1       | TIM1_CH3 (60) | mem→perif | DShot600 motor 3 (PA10)  |
 | Channel 6 | GPDMA1       | TIM1_CH4 (61) | mem→perif | DShot600 motor 4 (PA11)  |
+| Channel 7 | GPDMA1       | USART3_RX (25) | perif→mem | Recepção GPS BN-220 (9600) |
 
 - Handles: `hdma_spi1_rx` / `hdma_spi1_tx` / `hdma_usart2_rx`, vinculados a `hspi1` e `huart2` no `Core/Src/usr/system/hardware_glue.c` (reparo em código do regen).
+- Handle GPS: `hdma_usart3_rx`, vinculado a `huart3` no `Core/Src/usr/sensors/gps_uart_hal.c`.
 - Handles DShot: `hdma_tim1_ch1..ch4`, vinculados a `htim1` no `Core/Src/usr/esc/dshot_timer_hal.c`.
 - IRQs: `SPI1_IRQn`, `GPDMA1_Channel0/1/2_IRQn`, `USART2_IRQn` e `EXTI0_IRQn` (preempt 5, sub 0) — os handlers de SPI1/GPDMA1 ficam no `hardware_glue.c`.
+- IRQs GPS: `GPDMA1_Channel7_IRQn` e `USART3_IRQn` (preempt 5, sub 0) — handlers no `gps_uart_hal.c`.
 - IRQs DShot: `GPDMA1_Channel3/4/5/6_IRQn` (preempt 5, sub 0) — handlers no `dshot_timer_hal.c`.
 - O fim da leitura do IMU dispara `HAL_SPI_TxRxCpltCallback` → decodifica o burst → `controlador_atualiza`.
 
@@ -112,6 +115,47 @@ Leitura SPI: endereço | 0x80. Escrita SPI: endereço & 0x7F. Little: big-endian
 - Implementado **100% em código** (TIM1 não configurado no `.ioc`; HAL TIM copiado do pacote
   `STM32Cube_FW_H5_V1.7.0` e `HAL_TIM_MODULE_ENABLED` habilitado no `stm32h5xx_hal_conf.h`).
 
+## 4f. GPS BN-220 - USART3
+
+| Função     | Pino MCU | Sinal      | Obs.                                        |
+|------------|----------|------------|---------------------------------------------|
+| USART3 TX  | PC10     | USART3_TX  | AF7 (não usado pelo GPS, reservado)         |
+| USART3 RX  | PC4      | USART3_RX  | AF7; NMEA 9600 8N1                          |
+
+- O CubeMX gera a USART3 a **115200**; o glue re-inicializa para **9600 8N1**
+  (`GPS_BAUD_RATE` em `gps_uart_hal.c`) — padrão de fábrica do BN-220.
+- **DMA GPDMA1 CH7** (`GPDMA1_REQUEST_USART3_RX = 25`): o GPDMA do H5 **não tem modo
+  circular** (`DMA_CIRCULAR` não existe no HAL H5); usa-se **DMA Normal +
+  `HAL_UARTEx_ReceiveToIdle_DMA`** com re-arme no callback (mesmo padrão do iBus).
+- Evento TC (buffer 512 cheio) ou IDLE (folga de 1 frame) → `gps_uart_rx_event`
+  copia os bytes para um ring de 1024 → o `main_j3dronev2.c` esvazia no parser
+  `gps_nmea.c` (puro, testável no host).
+- `gps_led.c` controla o LED de status em PB2 (fix válido e recente).
+
+## 4g. LIS3MDL + BMP280 - I2C2
+
+| Função  | Pino MCU | Sinal    | Obs.                      |
+|---------|----------|----------|---------------------------|
+| I2C2 SCL| PB10     | I2C2_SCL | AF4, ~400 kHz (fast mode) |
+| I2C2 SDA| PB12     | I2C2_SDA | AF4                        |
+
+| Sensor  | Endereço | WHO_AM_I | Função                          |
+|---------|----------|----------|---------------------------------|
+| LIS3MDL | 0x1C     | 0x3D     | Magnetômetro → correção de yaw no estimador |
+| BMP280  | 0x76     | 0x58     | Barômetro → altitude (home point / retorno)  |
+
+- Leitura por **polling** (~100 Hz) no loop principal via `i2c2_hal.c`
+  (HAL I2C bloqueante; a I2C2 é lenta e o tráfego é pequeno).
+- Config LIS3MDL: modo contínuo, ±4 gauss, ODR 100 Hz (`CTRL1 = 0x10`).
+
+## 4h. LED de status do GPS (PB2)
+
+| Função  | Pino MCU | Sinal       | Obs.                                    |
+|---------|----------|-------------|-----------------------------------------|
+| LED_GPS | PB2      | GPIO_Output | Ativo alto (`GPS_LED_Pin` em main.h)    |
+
+- Aceso com fix válido (HDOP ok) e recente (dentro de `GPS_FIX_JANELA_MS`); apagado sem fix.
+
 ## 4e. Cadeia de controle de voo (entrada → processamento → saída)
 
 - **Entrada**: iBus (USART2+DMA+IDLE) → `radio_comandos.c` mapeia os canais AETR para o `setpoint`
@@ -146,5 +190,9 @@ O `.ioc` já contém SPI1 com prescaler `_2` e `SPI1Freq_Value = 24 MHz`. Se um 
 3. **SPI1**: Data Size 8 bits, prescaler ÷2, NSS soft, NSSP off, modo 0.
 4. **PB0**: EXTI0 rising; **PA4**: GPIO output HIGH com label `IMU_CS`; **PB5**: `LED_MODO`.
 5. **USART2**: 115200 8N1, pinos PA2/PA3 AF7 (RX FT). Não ligar DMA no CubeMX (feito no hardware_glue).
-6. **TIM1/ESC**: PA8..PA11 AF1, ARR 332, PWM Mode 1 — **não** usar GPIO/DMA do CubeMX (feito no `dshot_timer_hal.c`). O HAL TIM copiado e o `HAL_TIM_MODULE_ENABLED` podem ser revertidos por um regen: recopiar `stm32h5xx_hal_tim*` e re-habilitar o define.
-7. Evitar `HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0)` duplicado no `stm32h5xx_it.c` (já está no bloco USER CODE EXTI0) e os IRQ handlers de SPI1/GPDMA1 CH0..CH6 (ficam no `hardware_glue.c`/`dshot_timer_hal.c`).
+6. **USART3 (GPS)**: pinos PC10/PC4 AF7; o regen gera 115200 e o glue volta para **9600 8N1**.
+   DMA CH7 não é criado pelo CubeMX (feito no `gps_uart_hal.c`, DMA Normal + ReceiveToIdle —
+   o GPDMA do H5 não tem circular).
+7. **I2C2**: SCL PB10 / SDA PB12 AF4; **PB2**: GPIO output `GPS_LED`. Sem DMA (polling no `i2c2_hal.c`).
+8. **TIM1/ESC**: PA8..PA11 AF1, ARR 332, PWM Mode 1 — **não** usar GPIO/DMA do CubeMX (feito no `dshot_timer_hal.c`). O HAL TIM copiado e o `HAL_TIM_MODULE_ENABLED` podem ser revertidos por um regen: recopiar `stm32h5xx_hal_tim*` e re-habilitar o define.
+9. Evitar `HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0)` duplicado no `stm32h5xx_it.c` (já está no bloco USER CODE EXTI0) e os IRQ handlers de SPI1/GPDMA1 CH0..CH6/CH7 (ficam no `hardware_glue.c`/`dshot_timer_hal.c`/`gps_uart_hal.c`).

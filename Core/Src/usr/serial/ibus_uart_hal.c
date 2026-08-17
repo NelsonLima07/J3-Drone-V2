@@ -79,20 +79,15 @@ uint32_t ibus_uart_ultimo_tick(void)
   return ibus_ultimo_tick;
 }
 
-/* --- Override das funcoes weak do HAL -------------------------------------- */
+/* --- Handlers chamados pelo dispatcher do hardware_glue -------------------- */
 
-void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
+void ibus_uart_rx_event(uint16_t size)
 {
   uint16_t canais[IBUS_NUM_CANAIS];
   uint16_t i;
   uint32_t primask;
 
-  if (huart->Instance != USART2)
-  {
-    return;
-  }
-
-  if (Size == IBUS_FRAME_TAMANHO &&
+  if (size == IBUS_FRAME_TAMANHO &&
       ibus_decodifica((const uint8_t *)ibus_rx_dma, canais) == 0)
   {
     primask = __get_PRIMASK();
@@ -110,15 +105,9 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
                                      IBUS_FRAME_TAMANHO);
 }
 
-void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+void ibus_uart_erro(void)
 {
-  if (huart->Instance != USART2)
-  {
-    return;
-  }
-
   /* Erro de RX (overrun/noise/frame): HAL abortou o DMA e deixou READY. */
-  huart->ErrorCode = HAL_UART_ERROR_NONE;
   (void)HAL_UARTEx_ReceiveToIdle_DMA(&huart2, (uint8_t *)ibus_rx_dma,
                                      IBUS_FRAME_TAMANHO);
 }
