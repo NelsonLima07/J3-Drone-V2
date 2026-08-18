@@ -1,15 +1,16 @@
 /**
  * @file    i2c2_hal.c
- * @brief   Transporte I2C2 (polling) para LIS3MDL e BMP280.
+ * @brief   Transporte I2C2 (polling) para LIS3MDL.
  * @date    2026-08-16
  * @author  Nelson Lima
  * @ai      opencode (big-pickle)
  *
  * PORTAS (ver docs/pinout_map.md - secao I2C2):
  *   - I2C2_SCL = PB10, I2C2_SDA = PB12 (AF4, open-drain)  [CubeMX]
- *   - LIS3MDL a 0x1C e BMP280 a 0x76 compartilham o barramento.
+ *   - LIS3MDL a 0x1C no barramento I2C2.
  * CONFIGURACAO: o CubeMX gera a I2C2 a ~400 kHz (Fast Mode). Os pinos
  * ficam sem pull-up interno (NOPULL): use os pull-ups dos modulos.
+ * O BMP581 agora usa I3C1 (PB6/PB7) via i3c_bmp581_hal.
  */
 
 #include "sensors/i2c2_hal.h"

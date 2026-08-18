@@ -28,7 +28,7 @@ add_executable(usr_tests
     ../navigation/nav_posicao.c
     ../navigation/nav_controle.c
     ../sensors/lis3mdl.c
-    ../sensors/bmp280.c
+    ../sensors/bmp581.c
     ../esc/dshot.c
     test_main.c
     test_math.c
@@ -45,7 +45,7 @@ add_executable(usr_tests
     test_nav_posicao.c
     test_nav_controle.c
     test_lis3mdl.c
-    test_bmp280.c
+    test_bmp581.c
     test_estimador_mag.c
 )
 

@@ -19,9 +19,10 @@
 #include "sensors/imuc42688.h"
 #include "sensors/imuc42688_spi_hal.h"
 #include "sensors/lis3mdl.h"
-#include "sensors/bmp280.h"
+#include "sensors/bmp581.h"
 #include "sensors/gps_uart_hal.h"
 #include "sensors/i2c2_hal.h"
+#include "sensors/i3c_bmp581_hal.h"
 #include "system/hardware_glue.h"
 #include "system/estados.h"
 #include "system/calibracao.h"
@@ -87,9 +88,9 @@ static nav_comando_t nav_cmd;
 static uint8_t hold_engajado;
 static float hold_lat, hold_lon, hold_alt;
 
-/* Mag (LIS3MDL) e baro (BMP280) na I2C2. mag_sombra e consumido na ISR. */
+/* Mag (LIS3MDL) na I2C2. baro (BMP581) na I3C1. mag_sombra e consumido na ISR. */
 static lis3mdl_t sistema_mag;
-static bmp280_t sistema_baro;
+static bmp581_t sistema_baro;
 static imuc_transport_t transporte_mag;
 static imuc_transport_t transporte_baro;
 static volatile float mag_sombra[3];
@@ -210,9 +211,9 @@ static void sistema_inicializa(void)
   nav_posicao_inicializa(&sistema_nav, 1.5f);
   hold_engajado = 0;
 
-  /* Mag (LIS3MDL, 0x1C) e baro (BMP280, 0x76) na I2C2 (polling). */
+  /* Mag (LIS3MDL, 0x1C) na I2C2 (polling) e baro (BMP581, 0x46) na I3C1. */
   (void)i2c2_hal_vincula(&transporte_mag, LIS3MDL_ENDERECO);
-  (void)i2c2_hal_vincula(&transporte_baro, BMP280_ENDERECO);
+  (void)i3c_bmp581_hal_vincula(&transporte_baro);
   mag_ok = 0;
   baro_ok = 0;
   if (lis3mdl_inicializa(&sistema_mag, &transporte_mag) == 0 &&
@@ -221,9 +222,9 @@ static void sistema_inicializa(void)
   {
     mag_ok = 1;
   }
-  if (bmp280_inicializa(&sistema_baro, &transporte_baro) == 0 &&
-      bmp280_verifica_id(&sistema_baro) &&
-      bmp280_configura(&sistema_baro) == 0)
+  if (bmp581_inicializa(&sistema_baro, &transporte_baro) == 0 &&
+      bmp581_verifica_id(&sistema_baro) &&
+      bmp581_configura(&sistema_baro) == 0)
   {
     baro_ok = 1;
   }
@@ -351,7 +352,7 @@ void main_j3dronev2(void)
           mag_pronto = 1;
         }
       }
-      if (baro_ok && bmp280_processa(&sistema_baro))
+      if (baro_ok && bmp581_processa(&sistema_baro))
       {
         float dt_s = (float)(agora - ultima_baro_ms) * 0.001f;
         baro_alt = filtro_lpf1_aplica(&baro_alt_filtro,

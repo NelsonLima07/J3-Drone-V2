@@ -23,7 +23,7 @@ add_library(usr STATIC
     navigation/nav_posicao.c
     navigation/nav_controle.c
     sensors/lis3mdl.c
-    sensors/bmp280.c
+    sensors/bmp581.c
     esc/dshot.c
 )
 

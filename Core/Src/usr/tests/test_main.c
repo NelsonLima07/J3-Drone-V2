@@ -22,7 +22,7 @@ int testes_home_ponto(void);
 int testes_nav_posicao(void);
 int testes_nav_controle(void);
 int testes_lis3mdl(void);
-int testes_bmp280(void);
+int testes_bmp581(void);
 int testes_estimador_mag(void);
 
 int main(void)
@@ -71,8 +71,8 @@ int main(void)
   printf("\n=== Testes do magnetometro LIS3MDL ===\n");
   falhas += testes_lis3mdl();
 
-  printf("\n=== Testes do barometro BMP280 ===\n");
-  falhas += testes_bmp280();
+  printf("\n=== Testes do barometro BMP581 ===\n");
+  falhas += testes_bmp581();
 
   printf("\n=== Testes do estimador com magnetometro ===\n");
   falhas += testes_estimador_mag();

@@ -1,6 +1,6 @@
 /**
  * @file    i2c2_hal.h
- * @brief   Transporte I2C2 (polling) para LIS3MDL e BMP280.
+ * @brief   Transporte I2C2 (polling) para LIS3MDL.
  * @date    2026-08-16
  * @author  Nelson Lima
  * @ai      opencode (big-pickle)

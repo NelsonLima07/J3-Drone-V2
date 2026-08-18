@@ -22,6 +22,7 @@
 #include "stm32h5xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "i3c.h"
 #include "spi.h"
 #include "gpio.h"
 /* USER CODE END Includes */
@@ -228,5 +229,21 @@ void USART2_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
+
+/**
+  * @brief This function handles I3C1 Event interrupt.
+  */
+void I3C1_EV_IRQHandler(void)
+{
+  HAL_I3C_EV_IRQHandler(&hi3c1);
+}
+
+/**
+  * @brief This function handles I3C1 Error interrupt.
+  */
+void I3C1_ER_IRQHandler(void)
+{
+  HAL_I3C_ER_IRQHandler(&hi3c1);
+}
 
 /* USER CODE END 1 */

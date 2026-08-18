@@ -20,6 +20,7 @@
 #include "main.h"
 #include "gpdma.h"
 #include "i2c.h"
+#include "i3c.h"
 #include "icache.h"
 #include "spi.h"
 #include "usart.h"
@@ -101,6 +102,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
   MX_I2C2_Init();
+  MX_I3C1_Init();
   /* USER CODE BEGIN 2 */
   main_j3dronev2();
   /* USER CODE END 2 */

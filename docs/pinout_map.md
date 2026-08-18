@@ -132,7 +132,7 @@ Leitura SPI: endereço | 0x80. Escrita SPI: endereço & 0x7F. Little: big-endian
   `gps_nmea.c` (puro, testável no host).
 - `gps_led.c` controla o LED de status em PB2 (fix válido e recente).
 
-## 4g. LIS3MDL + BMP280 - I2C2
+## 4g. LIS3MDL - I2C2
 
 | Função  | Pino MCU | Sinal    | Obs.                      |
 |---------|----------|----------|---------------------------|
@@ -142,11 +142,28 @@ Leitura SPI: endereço | 0x80. Escrita SPI: endereço & 0x7F. Little: big-endian
 | Sensor  | Endereço | WHO_AM_I | Função                          |
 |---------|----------|----------|---------------------------------|
 | LIS3MDL | 0x1C     | 0x3D     | Magnetômetro → correção de yaw no estimador |
-| BMP280  | 0x76     | 0x58     | Barômetro → altitude (home point / retorno)  |
 
 - Leitura por **polling** (~100 Hz) no loop principal via `i2c2_hal.c`
   (HAL I2C bloqueante; a I2C2 é lenta e o tráfego é pequeno).
 - Config LIS3MDL: modo contínuo, ±4 gauss, ODR 100 Hz (`CTRL1 = 0x10`).
+
+## 4g2. BMP581 (Barômetro) - I3C1
+
+| Função  | Pino MCU | Sinal    | Obs.                                  |
+|---------|----------|----------|---------------------------------------|
+| I3C1 SCL| PB6      | I3C1_SCL | AF3, push-pull, open-drain (SDR)     |
+| I3C1 SDA| PB7      | I3C1_SDA | AF3                                   |
+
+| Sensor  | Static Addr | Dynamic Addr | WHO_AM_I | Função                       |
+|---------|-------------|-------------|----------|------------------------------|
+| BMP581  | 0x46        | 0x46        | 0x50     | Barômetro → altitude (home/retorno) |
+
+- Comunicação via **I3C SDR 12.5 MHz** (push-pull); addressamento por SETDASA CCC.
+- Modo **IBI (In-Band Interrupt)**: o sensor assinala data-ready via IBI; o controlador lê os 6 bytes em callback.
+- Leitura via `i3c_bmp581_hal.c` (HAL I3C IT, `HAL_I3C_Ctrl_Receive_IT`); driver `bmp581.c` (C puro).
+- Compensação **on-chip**: temperatura ÷65536.0 → °C; pressão ÷64.0 → Pa (sem calibração NVM).
+- Config: OSR T=1x / P=8x, ODR 25 Hz, DSP ambas compensações, INT_SOURCE drdy_en.
+- Handle: `hi3c1` (exportado por `i3c.h`); IRQs `I3C1_EV_IRQn` (123) e `I3C1_ER_IRQn` (124) no `stm32h5xx_it.c`.
 
 ## 4h. LED de status do GPS (PB2)
 
@@ -193,6 +210,7 @@ O `.ioc` já contém SPI1 com prescaler `_2` e `SPI1Freq_Value = 24 MHz`. Se um 
 6. **USART3 (GPS)**: pinos PC10/PC4 AF7; o regen gera 115200 e o glue volta para **9600 8N1**.
    DMA CH7 não é criado pelo CubeMX (feito no `gps_uart_hal.c`, DMA Normal + ReceiveToIdle —
    o GPDMA do H5 não tem circular).
-7. **I2C2**: SCL PB10 / SDA PB12 AF4; **PB2**: GPIO output `GPS_LED`. Sem DMA (polling no `i2c2_hal.c`).
+7. **I2C2**: SCL PB10 / SDA PB12 AF4 (LIS3MDL apenas); **PB2**: GPIO output `GPS_LED`. Sem DMA (polling no `i2c2_hal.c`).
+   **I3C1**: SCL PB6 / SDA PB7 AF3 (BMP581 com IBI); config CubeMX com HAL_I3C_MODULE_ENABLED; IRQs I3C1_EV/ER no `stm32h5xx_it.c`.
 8. **TIM1/ESC**: PA8..PA11 AF1, ARR 332, PWM Mode 1 — **não** usar GPIO/DMA do CubeMX (feito no `dshot_timer_hal.c`). O HAL TIM copiado e o `HAL_TIM_MODULE_ENABLED` podem ser revertidos por um regen: recopiar `stm32h5xx_hal_tim*` e re-habilitar o define.
 9. Evitar `HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0)` duplicado no `stm32h5xx_it.c` (já está no bloco USER CODE EXTI0) e os IRQ handlers de SPI1/GPDMA1 CH0..CH6/CH7 (ficam no `hardware_glue.c`/`dshot_timer_hal.c`/`gps_uart_hal.c`).
