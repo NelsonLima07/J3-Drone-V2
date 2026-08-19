@@ -18,6 +18,7 @@ int testes_dshot(void);
 int testes_estimador(void);
 int testes_radio(void);
 int testes_gps_nmea(void);
+int testes_j3serial(void);
 int testes_home_ponto(void);
 int testes_nav_posicao(void);
 int testes_nav_controle(void);
@@ -58,6 +59,9 @@ int main(void)
 
   printf("\n=== Testes do parser NMEA (GPS BN-220) ===\n");
   falhas += testes_gps_nmea();
+
+  printf("\n=== Testes do protocolo j3Serial ===\n");
+  falhas += testes_j3serial();
 
   printf("\n=== Testes do home point ===\n");
   falhas += testes_home_ponto();

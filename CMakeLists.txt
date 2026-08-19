@@ -53,6 +53,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Core/Src/usr/system/hardware_glue.c
     # Recepcao iBus na USART2 (DMA + IDLE)
     Core/Src/usr/serial/ibus_uart_hal.c
+    # Link j3Serial na USART1 (waypoints, telemetria, teste de motor)
+    Core/Src/usr/serial/j3serial_uart_hal.c
     # Saida DShot600 para os 4 ESCs (TIM1 + GPDMA1 CH3..CH6)
     Core/Src/usr/esc/dshot_timer_hal.c
     # Recepcao GPS BN-220 na USART3 (DMA circular GPDMA1 CH7)

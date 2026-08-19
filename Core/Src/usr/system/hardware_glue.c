@@ -23,6 +23,7 @@
 #include "stm32h5xx_hal.h"
 
 #include "serial/ibus_uart_hal.h"
+#include "serial/j3serial_uart_hal.h"
 #include "sensors/gps_uart_hal.h"
 
 /* Handles de DMA (GPDMA1) usados pelo SPI1 e pela USART2 */
@@ -235,7 +236,11 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size)
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 {
-  if (huart->Instance == USART2)
+  if (huart->Instance == USART1)
+  {
+    j3serial_uart_erro();
+  }
+  else if (huart->Instance == USART2)
   {
     ibus_uart_erro();
   }

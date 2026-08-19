@@ -173,6 +173,23 @@ Leitura SPI: endereço | 0x80. Escrita SPI: endereço & 0x7F. Little: big-endian
 
 - Aceso com fix válido (HDOP ok) e recente (dentro de `GPS_FIX_JANELA_MS`); apagado sem fix.
 
+## 4i. Link de telemetria j3Serial (waypoints) - USART1
+
+| Função    | Pino MCU | Sinal      | Obs.                                     |
+|-----------|----------|------------|------------------------------------------|
+| USART1 TX | PB14     | USART1_TX  | AF14; frame de resposta do FC para o PC  |
+| USART1 RX | PB15     | USART1_RX  | AF14; comandos do host (upload de rota)  |
+
+- **115200 8N1**, 1 stop bit, sem hardware flow control (cabos curtos).
+- O CubeMX gera a USART1 sem IRQ/DMA; o `j3serial_uart_hal.c` habilita
+  `USART1_IRQn` (preempt 5) e define o `USART1_IRQHandler` — mesmo padrão do
+  `gps_uart_hal.c`. Recepção por `HAL_UART_Receive_IT` (1 byte, re-arme no
+  callback) para um ring de 256; transmissão bloqueante com timeout 100 ms.
+- Protocolo j3Serial (frame `AA | LEN | TIPO | PAYLOAD | CRC8`): doc completo em
+  `docs/j3Serial_protocolo.md`. Comandos: upload/limpar/consultar rota (16
+  waypoints máx), missão (iniciar/pausar), telemetria periódica, leitura de
+  sensores e teste de motor (FSM automática subida→pico 3 s→descida).
+
 ## 4e. Cadeia de controle de voo (entrada → processamento → saída)
 
 - **Entrada**: iBus (USART2+DMA+IDLE) → `radio_comandos.c` mapeia os canais AETR para o `setpoint`
@@ -213,4 +230,6 @@ O `.ioc` já contém SPI1 com prescaler `_2` e `SPI1Freq_Value = 24 MHz`. Se um 
 7. **I2C2**: SCL PB10 / SDA PB12 AF4 (LIS3MDL apenas); **PB2**: GPIO output `GPS_LED`. Sem DMA (polling no `i2c2_hal.c`).
    **I3C1**: SCL PB6 / SDA PB7 AF3 (BMP581 com IBI); config CubeMX com HAL_I3C_MODULE_ENABLED; IRQs I3C1_EV/ER no `stm32h5xx_it.c`.
 8. **TIM1/ESC**: PA8..PA11 AF1, ARR 332, PWM Mode 1 — **não** usar GPIO/DMA do CubeMX (feito no `dshot_timer_hal.c`). O HAL TIM copiado e o `HAL_TIM_MODULE_ENABLED` podem ser revertidos por um regen: recopiar `stm32h5xx_hal_tim*` e re-habilitar o define.
+   - **Estratégia atual (híbrida, desde 2026-08-18)**: o TIM1 **está configurado no .ioc** (Clock Source Internal, PWM CH1..CH4, `PeriodNoDither=332`) — o regen gera `tim.c`, o define e o `stm32h5xx_hal_tim.c` sozinho. **Não** adicionar DMA no TIM1 nem NVIC GPDMA1 CH3..CH6 no CubeMX (duplicaria os IRQ handlers do `dshot_timer_hal.c`). O DMA/NVIC/IRQ seguem 100% em código; o `dshot_timer_configura` zera o SMCR (`htim1.Instance->SMCR = 0U`) para o DShot não depender do que o CubeMX gerar no slave mode (ex.: Clock Source ITR1).
 9. Evitar `HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0)` duplicado no `stm32h5xx_it.c` (já está no bloco USER CODE EXTI0) e os IRQ handlers de SPI1/GPDMA1 CH0..CH6/CH7 (ficam no `hardware_glue.c`/`dshot_timer_hal.c`/`gps_uart_hal.c`).
+10. **USART1 (j3Serial)**: pinos PB14 TX / PB15 RX AF14, 115200 8N1. O regen não gera IRQ para ela — conferir `USART1_IRQn` habilitado e o `USART1_IRQHandler` no `j3serial_uart_hal.c` (e o branch USART1 no `HAL_UART_ErrorCallback` do `hardware_glue.c`).

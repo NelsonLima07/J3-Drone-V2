@@ -1,0 +1,3 @@
+C:/NelsonLima/Projetos/J3_DroneV2/J3-Drone/build-tests/CMakeFiles/usr_tests.dir
+C:/NelsonLima/Projetos/J3_DroneV2/J3-Drone/build-tests/CMakeFiles/edit_cache.dir
+C:/NelsonLima/Projetos/J3_DroneV2/J3-Drone/build-tests/CMakeFiles/rebuild_cache.dir

@@ -91,6 +91,11 @@ static int dshot_timer_configura(void)
     return -1;
   }
 
+  /* Garante modo master livre, mesmo se o CubeMX gerar trigger externo
+     (ex.: Clock Source ITR1 -> SMCR com EXTERNAL1). O HAL TIM base nao
+     limpa o SMCR; sem isso o contador so conta com bordas do TIM2. */
+  htim1.Instance->SMCR = 0U;
+
   oc.OCMode = TIM_OCMODE_PWM1;
   oc.Pulse = 0;
   oc.OCPolarity = TIM_OCPOLARITY_HIGH;

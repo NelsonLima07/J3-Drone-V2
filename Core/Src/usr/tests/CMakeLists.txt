@@ -22,6 +22,7 @@ add_executable(usr_tests
     ../serial/ibus.c
     ../serial/radio_comandos.c
     ../serial/gps_nmea.c
+    ../serial/j3serial.c
     ../system/estados.c
     ../system/calibracao.c
     ../navigation/home_ponto.c
@@ -41,6 +42,7 @@ add_executable(usr_tests
     test_estimador.c
     test_radio.c
     test_gps_nmea.c
+    test_j3serial.c
     test_home_ponto.c
     test_nav_posicao.c
     test_nav_controle.c

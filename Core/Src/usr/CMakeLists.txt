@@ -17,6 +17,7 @@ add_library(usr STATIC
     serial/ibus.c
     serial/radio_comandos.c
     serial/gps_nmea.c
+    serial/j3serial.c
     system/estados.c
     system/calibracao.c
     navigation/home_ponto.c
